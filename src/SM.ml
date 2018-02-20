@@ -29,10 +29,10 @@ let update x v s = fun y -> if x = y then v else s y
 let s = update "x" 1 @@ update "y" 2 @@ update "z" 3 @@ update "t" 4 empty
 
 
-    let int_bool a = if a != 0 then true else false (*if 1->true, if 0->false*)
-    let bool_int a = if a then 1 else 0 (*if true->1, if false->0*)
+let int_bool a = if a != 0 then true else false (*if 1->true, if 0->false*)
+let bool_int a = if a then 1 else 0 (*if true->1, if false->0*)
 
-    let rec eval state expression = 
+let rec eval state expression = 
     match expression with
     | Var v -> state v 
     | Const c -> c 
