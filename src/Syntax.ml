@@ -35,39 +35,12 @@ module Expr =
     let update x v s = fun y -> if x = y then v else s y
 
     (* Expression evaluator
-
           val eval : state -> t -> int
  
        Takes a state and an expression, and returns the value of the expression in 
        the given state.
-    *)
-    let eval _ = failwith "Not implemented yet"
-
-  end
-                    
-(* Simple statements: syntax and sematics *)
-module Stmt =
-  struct
-
-    (* The type for statements *)
-    @type t =
-    (* read into the variable           *) | Read   of string
-    (* write the value of an expression *) | Write  of Expr.t
-    (* assignment                       *) | Assign of string * Expr.t
-    (* composition                      *) | Seq    of t * t with show
-
-    (* The type of configuration: a state, an input stream, an output stream *)
-    type config = Expr.state * int list * int list 
-
-    (* Statement evaluator
-
-          val eval : config -> t -> config
-
-       Takes a configuration and a statement, and returns another configuration
-    *)
-    (*let eval _ = failwith "Not implemented yet"
-      *)
-      let int2bool x = x !=0
+   0 *)
+let int2bool x = x !=0
 let bool2int x = if x then 1 else 0
 
 let rec eval state expr = 
@@ -91,19 +64,36 @@ let rec eval state expr =
 	| "!=" -> bool2int (left_op != right_op)
 	| "&&" -> bool2int (int2bool left_op && int2bool right_op)
 	| "!!" -> bool2int (int2bool left_op || int2bool right_op)
-	| _ -> failwith "Not implemented yet"                                                   
+	| _ -> failwith "Not implemented yet"    
+
   end
+                    
+(* Simple statements: syntax and sematics *)
+module Stmt =
+  struct
 
-(* The top-level definitions *)
+    (* The type for statements *)
+    @type t =
+    (* read into the variable           *) | Read   of string
+    (* write the value of an expression *) | Write  of Expr.t
+    (* assignment                       *) | Assign of string * Expr.t
+    (* composition                      *) | Seq    of t * t with show
 
-(* The top-level syntax category is statement *)
-type t = Stmt.t    
+    (* The type of configuration: a state, an input stream, an output stream *)
+    type config = Expr.state * int list * int list 
 
-(* Top-level evaluator
-
-     eval : int list -> t -> int list
-
-   Takes a program and its input stream, and returns the output stream
-*)
-let eval i p =
-  let _, _, o = Stmt.eval (Expr.empty, i, []) p in o
+    (* Statement evaluator
+          val eval : config -> t -> config
+       Takes a configuration and a statement, and returns another configuration
+    *)
+    let rec eval (state, input, output) stmt = 
+	match stmt with
+	| Assign (x, expr) -> (Expr.update x (Expr.eval state expr) state, input, output)
+	| Read (x) -> 
+		(match input with
+		| z::tail -> (Expr.update x z state, tail, output)
+		| [] -> failwith "Empty input stream")
+	| Write (expr) -> (state, input, output @ [(Expr.eval state expr)])
+	| Seq (frts_stmt, scnd_stmt) -> (eval (eval (state, input, output) frts_stmt ) scnd_stmt)
+                                                         
+end
