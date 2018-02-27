@@ -39,32 +39,34 @@ module Expr =
  
        Takes a state and an expression, and returns the value of the expression in 
        the given state.
-   0 *)
-let int2bool x = x !=0
-let bool2int x = if x then 1 else 0
+    
+    let eval _ = failwith "Not implemented yet"*)
+		let binop operation op1 op2 =
+			     let num2bool value = 
+			       if value == 0 then false else true in
+			     let bool2num value = 
+			       if value then 1 else 0 in
+			     match operation with
+			     | "+"   -> op1 + op2
+			     | "-"   -> op1 - op2
+			     | "*"   -> op1 * op2
+			     | "/"   -> op1 / op2
+			     | "%"   -> op1 mod op2
+			     | "&&"  -> bool2num (num2bool op1 && num2bool op2)
+			     | "!!"  -> bool2num (num2bool op1 || num2bool op2)
+			     | "<"   -> bool2num (op1 < op2)
+			     | "<="  -> bool2num (op1 <= op2)
+			     | ">"   -> bool2num (op1 > op2)
+			     | ">="  -> bool2num (op1 >= op2)
+			     | "=="  -> bool2num (op1 == op2)
+			     | "!="  -> bool2num (op1 != op2)
 
-let rec eval state expr = 
-	match expr with
-	| Const c -> c
-	| Var v -> state v
-	| Binop (operatop, left_expr, right_expr) ->
-	let left_op = eval state left_expr in
-	let right_op = eval state right_expr in
-	match operatop with
-	| "+" -> left_op + right_op
-	| "-" -> left_op - right_op
-	| "*" -> left_op * right_op
-	| "/" -> left_op / right_op
-	| "%" -> left_op mod right_op
-	| "<" -> bool2int (left_op < right_op)
-	| ">" -> bool2int (left_op > right_op)
-	| "<=" -> bool2int (left_op <= right_op)
-	| ">=" -> bool2int (left_op >= right_op)
-	| "==" -> bool2int (left_op == right_op)
-	| "!=" -> bool2int (left_op != right_op)
-	| "&&" -> bool2int (int2bool left_op && int2bool right_op)
-	| "!!" -> bool2int (int2bool left_op || int2bool right_op)
-	| _ -> failwith "Not implemented yet"    
+		let rec eval state expr = 
+   		match expr with
+   		| Const const -> const
+   		| Var variable -> state variable
+   		| Binop (operation, op1, op2) ->
+				binop operation (eval state op1) (eval state op2)
 
   end
                     
@@ -85,15 +87,34 @@ module Stmt =
     (* Statement evaluator
           val eval : config -> t -> config
        Takes a configuration and a statement, and returns another configuration
-    *)
-    let rec eval (state, input, output) stmt = 
-	match stmt with
-	| Assign (x, expr) -> (Expr.update x (Expr.eval state expr) state, input, output)
-	| Read (x) -> 
-		(match input with
-		| z::tail -> (Expr.update x z state, tail, output)
-		| [] -> failwith "Empty input stream")
-	| Write (expr) -> (state, input, output @ [(Expr.eval state expr)])
-	| Seq (frts_stmt, scnd_stmt) -> (eval (eval (state, input, output) frts_stmt ) scnd_stmt)
+    
+    let eval _ = failwith "Not implemented yet"*)
+	let rec eval conf state = 
+			let (st, i, o) = conf in
+			match state with
+			| Read v ->
+				(match i with
+				|h::t -> (Expr.update v h st, i, o)
+				|[] -> failwith "Input is empty!")
+			| Write expr ->
+				(st, i, o @ [(Expr.eval st expr)])
+			| Assign (v, expr) ->
+				let ex = Expr.eval st expr in
+				(Expr.update v ex st, i, o)                                 
+			| Seq (l, r) ->
+				let tmp_config = eval conf l in
+				eval tmp_config r
                                                          
-end
+  end
+
+(* The top-level definitions *)
+
+(* The top-level syntax category is statement *)
+type t = Stmt.t    
+
+(* Top-level evaluator
+     eval : int list -> t -> int list
+   Takes a program and its input stream, and returns the output stream
+*)
+let eval i p =
+let _, _, o = Stmt.eval (Expr.empty, i, []) p in o

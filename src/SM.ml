@@ -18,60 +18,58 @@ type prg = insn list
 type config = int list * Syntax.Stmt.config
 
 (* Stack machine interpreter
-
      val eval : config -> prg -> config
-
    Takes a configuration and a program, and returns a configuration as a result
- *)                         
-(*let eval _ = failwith "Not yet implemented"*)
+let eval _ = failwith "Not yet implemented"*)
 let rec eval conf prog =
-	match prog with
-	| [] -> conf
-	|inst::tail -> (
-		match conf, inst with
-		| (y::x::stack, tm_conf), BINOP operation -> 
-			let value = Syntax.Expr.binop operation x y in
-			eval (value::stack, tm_conf) tail
-		| (stack, tm_conf), CONST value ->
-			eval (value::stack, tm_conf) tail
-		| (stack, (st, z::input, output)), READ -> 
-			eval (z::stack, (st, input, output)) tail
-		| (z::stack, (st, input, output)), WRITE -> 
-			eval (stack, (st, input, output @ [z])) tail
-		| (stack, (st, input, output)), LD x -> 
-			let value = st x in
-			eval (value::stack, (st, input, output)) tail
-		| (z::stack, (st, input, output)), ST x -> 
-			let stt = Syntax.Expr.update x z st in
-			eval (stack, (stt, input, output)) tail
-	)
+  match prog with
+  | [] -> conf
+  | instr :: tail ->
+    let (stack, config) = conf in
+    let (st, i, o) = config in
+    match instr with
+    | CONST c -> 
+	eval (c :: stack, config) tail
+    | READ -> 
+	let (inp :: t) = i in 
+	eval (inp :: stack, config) tail
+    | WRITE ->
+      let (s :: t) = stack in 
+	eval (t, (st, i, o @ [s])) tail
+    | ST v -> 
+	let (s :: t) = stack in
+      let st_up = Syntax.Expr.update v s st in
+      eval (t, (st_up, i, o)) tail
+    | LD var -> 
+	let v = st var in
+      eval (v :: stack, config) tail
+    | BINOP oper -> 
+			let (ls :: rs :: t) = stack in
+      let v = Syntax.Expr.binop oper rs ls in
+      eval (v :: t, config) tail
+
+
+let rec compile_expr expr =
+  match expr with
+  | Syntax.Expr.Const c -> [CONST c]
+  | Syntax.Expr.Var v -> [LD v]
+  | Syntax.Expr.Binop (operation, op1, op2) -> (compile_expr op1) @ (compile_expr op2) @ [BINOP operation]
+
 
 (* Top-level evaluation
-
      val run : int list -> prg -> int list
-
    Takes an input stream, a program, and returns an output stream this program calculates
 *)
 let run i p = let (_, (_, _, o)) = eval ([], (Syntax.Expr.empty, i, [])) p in o
 
 (* Stack machine compiler
-
      val compile : Syntax.Stmt.t -> prg
-
    Takes a program in the source language and returns an equivalent program for the
    stack machine
- *)
-
-(*let compile _ = failwith "Not yet implemented"*)
-let rec compileExpr expr = 
-	match expr with
-	| Syntax.Expr.Const c -> [CONST c]
-	| Syntax.Expr.Var x -> [LD x]
-	| Syntax.Expr.Binop (operation, left_op, right_op) -> compileExpr left_op @ compileExpr right_op @ [BINOP operation]
-
-let rec compile st = 
-	match st with
-	| Syntax.Stmt.Assign (x, expr) -> compileExpr expr @ [ST x]
-	| Syntax.Stmt.Read x -> [READ; ST x]
-	| Syntax.Stmt.Write expr -> compileExpr expr @ [WRITE]
-	| Syntax.Stmt.Seq (frts_stmt, scnd_stmt) -> compile frts_stmt @ compile scnd_stmt
+let compile _ = failwith "Not yet implemented"*)
+let rec compile st =
+  match st with
+  | Syntax.Stmt.Assign (x, expr) -> (compile_expr expr) @ [ST x]
+  | Syntax.Stmt.Read x -> [READ] @ [ST x]
+  | Syntax.Stmt.Write e -> (compile_expr e) @ [WRITE]
+  | Syntax.Stmt.Seq (l, r) -> (compile l) @ (compile r)

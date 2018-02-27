@@ -13,4 +13,4 @@ let eval  (s, p) e =
   let [sm_orig] = SM.run [] (SM.compile stmt) in
   if conj (orig = s_orig) (orig = sm_orig)
   then Printf.printf "%d\n" orig
-  else Printf.printf "*** divergence: %d <?> %d <?> %d\n" orig s_orig sm_orig
+else Printf.printf "*** divergence: %d <?> %d <?> %d\n" orig s_orig sm_orig
