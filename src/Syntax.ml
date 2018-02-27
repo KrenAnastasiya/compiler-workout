@@ -41,33 +41,34 @@ module Expr =
        the given state.
     
     let eval _ = failwith "Not implemented yet"*)
-		let binop operation op1 op2 =
-			     let num2bool value = 
-			       if value == 0 then false else true in
-			     let bool2num value = 
-			       if value then 1 else 0 in
-			     match operation with
-			     | "+"   -> op1 + op2
-			     | "-"   -> op1 - op2
-			     | "*"   -> op1 * op2
-			     | "/"   -> op1 / op2
-			     | "%"   -> op1 mod op2
-			     | "&&"  -> bool2num (num2bool op1 && num2bool op2)
-			     | "!!"  -> bool2num (num2bool op1 || num2bool op2)
-			     | "<"   -> bool2num (op1 < op2)
-			     | "<="  -> bool2num (op1 <= op2)
-			     | ">"   -> bool2num (op1 > op2)
-			     | ">="  -> bool2num (op1 >= op2)
-			     | "=="  -> bool2num (op1 == op2)
-			     | "!="  -> bool2num (op1 != op2)
+	let int2bool x = x !=0
+    let bool2int x = if x then 1 else 0
 
-		let rec eval state expr = 
-   		match expr with
-   		| Const const -> const
-   		| Var variable -> state variable
-   		| Binop (operation, op1, op2) ->
-				binop operation (eval state op1) (eval state op2)
-
+    let binop operation left_op right_op =
+        match operation with
+        | "+" -> left_op + right_op
+        | "-" -> left_op - right_op
+        | "*" -> left_op * right_op
+        | "/" -> left_op / right_op
+        | "%" -> left_op mod right_op
+        | "<" -> bool2int (left_op < right_op)
+        | ">" -> bool2int (left_op > right_op)
+        | "<=" -> bool2int (left_op <= right_op)
+        | ">=" -> bool2int (left_op >= right_op)
+        | "==" -> bool2int (left_op == right_op)
+        | "!=" -> bool2int (left_op != right_op)
+        | "&&" -> bool2int (int2bool left_op && int2bool right_op)
+        | "!!" -> bool2int (int2bool left_op || int2bool right_op)
+		| _ -> failwith "Not implemented yet"
+  
+   let rec eval state expr = 
+        match expr with
+        | Const c -> c
+        | Var v -> state v
+        | Binop (operation, left_expr, right_expr) ->
+        let left_op = eval state left_expr in
+        let right_op = eval state right_expr in
+		binop operation left_op right_op
   end
                     
 (* Simple statements: syntax and sematics *)
@@ -89,23 +90,18 @@ module Stmt =
        Takes a configuration and a statement, and returns another configuration
     
     let eval _ = failwith "Not implemented yet"*)
-	let rec eval conf state = 
-			let (st, i, o) = conf in
-			match state with
-			| Read v ->
-				(match i with
-				|h::t -> (Expr.update v h st, i, o)
-				|[] -> failwith "Input is empty!")
-			| Write expr ->
-				(st, i, o @ [(Expr.eval st expr)])
-			| Assign (v, expr) ->
-				let ex = Expr.eval st expr in
-				(Expr.update v ex st, i, o)                                 
-			| Seq (l, r) ->
-				let tmp_config = eval conf l in
-				eval tmp_config r
+	 let rec eval (state, input, output) stmt = 
+        match stmt with
+        | Assign (x, expr) -> (Expr.update x (Expr.eval state expr) state, input, output)
+        | Read (x) -> 
+              (match input with
+              | z::tail -> (Expr.update x z state, tail, output)
+              | [] -> failwith "Empty input stream")
+        | Write (expr) -> (state, input, output @ [(Expr.eval state expr)])
+        | Seq (frts_stmt, scnd_stmt) -> (eval (eval (state, input, output) frts_stmt ) scnd_stmt)
                                                          
   end
+ 
 
 (* The top-level definitions *)
 
