@@ -65,8 +65,33 @@ module Stmt =
 
        Takes a configuration and a statement, and returns another configuration
     *)
-    let eval _ = failwith "Not implemented yet"
-                                                         
+    (*let eval _ = failwith "Not implemented yet"
+      *)
+      let int2bool x = x !=0
+let bool2int x = if x then 1 else 0
+
+let rec eval state expr = 
+	match expr with
+	| Const c -> c
+	| Var v -> state v
+	| Binop (operatop, left_expr, right_expr) ->
+	let left_op = eval state left_expr in
+	let right_op = eval state right_expr in
+	match operatop with
+	| "+" -> left_op + right_op
+	| "-" -> left_op - right_op
+	| "*" -> left_op * right_op
+	| "/" -> left_op / right_op
+	| "%" -> left_op mod right_op
+	| "<" -> bool2int (left_op < right_op)
+	| ">" -> bool2int (left_op > right_op)
+	| "<=" -> bool2int (left_op <= right_op)
+	| ">=" -> bool2int (left_op >= right_op)
+	| "==" -> bool2int (left_op == right_op)
+	| "!=" -> bool2int (left_op != right_op)
+	| "&&" -> bool2int (int2bool left_op && int2bool right_op)
+	| "!!" -> bool2int (int2bool left_op || int2bool right_op)
+	| _ -> failwith "Not implemented yet"                                                   
   end
 
 (* The top-level definitions *)
