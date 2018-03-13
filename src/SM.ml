@@ -35,15 +35,15 @@ let rec eval conf prog =
                         eval (value::stack, tm_conf) tail
                 | (stack, tm_conf), CONST value ->
                         eval (value::stack, tm_conf) tail
-				| (stack, (st, z::input, output)), READ -> 
+		| (stack, (st, z::input, output)), READ -> 
                         eval (z::stack, (st, input, output)) tail
                 | (z::stack, (st, input, output)), WRITE -> 
                         eval (stack, (st, input, output @ [z])) tail
-				| (stack, (st, input, output)), LD x -> 
+		| (stack, (st, input, output)), LD x -> 
                         let value = st x in
                         eval (value::stack, (st, input, output)) tail
                         | (z::stack, (st, input, output)), ST x -> 
-						let stt = Language.Expr.update x z st in
+			let stt = Language.Expr.update x z st in
                         eval (stack, (stt, input, output)) tail
 )
 
@@ -75,4 +75,4 @@ let rec compile st =
         | Language.Stmt.Assign (x, expr) -> compileExpr expr @ [ST x]
         | Language.Stmt.Read x -> [READ; ST x]
         | Language.Stmt.Write expr -> compileExpr expr @ [WRITE]
-| Language.Stmt.Seq (frts_stmt, scnd_stmt) -> compile frts_stmt @ compile scnd_stmt
+		| Language.Stmt.Seq (frts_stmt, scnd_stmt) -> compile frts_stmt @ compile scnd_stmt
